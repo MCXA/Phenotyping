@@ -193,12 +193,13 @@ class arabidopsisStrainClassifier(object):
 class vegetationSegmentationNetwork(object):
     model = None
 
-    img_height = 256
-    img_width = 256
+    # TODO ensure this is valid -- replacing them with constructor values.
+    # img_height = 256
+    # img_width = 256
 
     __dir_name = 'vegetation-segmentation-network'
 
-    def __init__(self, batch_size=32):
+    def __init__(self, batch_size=32, img_height=None, img_width=None):
         """A network which provides segmentation masks from plant images"""
 
         m_path, _ = os.path.split(__file__)
@@ -212,8 +213,14 @@ class vegetationSegmentationNetwork(object):
         self.model.set_problem_type('semantic_segmentation')
         self.model.set_batch_size(batch_size)
         self.model.set_number_of_threads(1)
+        self.img_height = img_height
+        if not img_height:
+            self.img_height = 256
+        self.img_width = img_width
+        if not img_width:
+            self.img_width = 256
         self.model.set_image_dimensions(self.img_height, self.img_width, 3)
-        self.model.set_resize_images(True)
+        # self.model.set_resize_images(True)
 
         # Define a model architecture
         self.model.add_input_layer()

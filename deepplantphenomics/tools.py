@@ -43,12 +43,12 @@ class tools(object):
 
 
     @staticmethod
-    def segment_vegetation(x, batch_size=8):
+    def segment_vegetation(x, batch_size=8, img_height=None, img_width=None):
         """
         Uses a pre-trained fully convolutional network to perform vegetation segmentation
         """
 
-        net = networks.vegetationSegmentationNetwork(batch_size=batch_size)
+        net = networks.vegetationSegmentationNetwork(batch_size=batch_size, img_height=img_height, img_width=img_width)
         predictions = net.forward_pass(x)
         net.shut_down()
 
