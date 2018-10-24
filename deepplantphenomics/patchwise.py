@@ -4,12 +4,17 @@ Copy & Pasted from William's Plot Vision API. Plenty of work to do yet.
 
 import os
 
-import api.image_utils
-import api.utils
 import numpy as np
 import tqdm
-
+import argparse
 import deepplantphenomics.tools
+import glob
+import skimage.io
+import imghdr
+
+
+def file_is_image(file_path):
+    return imghdr.what(file_path) is not None
 
 
 def scale_image(img, old_min, old_max, new_min, new_max, rint=False, np_type=None):
@@ -116,20 +121,21 @@ def vegetation_segmentation_wrapper(paths, patch_shape, batch_size=8):
                                                        img_width=patch_shape[1])
 
 
-def apply_in_patches_with_one_to_one_results(f, paths, patch_shape, tmp_dir_path, *args, **kwargs):
+def apply_in_patches_with_one_to_one_results(f, paths, patch_shape, tmp_dir_path, result_dir,  *args, **kwargs):
     out_paths = []
     for path in tqdm.tqdm(paths):
         basepath, ext = os.path.splitext(path)
         basename = os.path.basename(basepath)
-        img = api.image_utils.load_im_from_file(path)
-
+        img = skimage.io.imread(path)
+        if len(img.shape) == 1:
+            img = img[0]
         patch_count, patch_shape, patches = split_img_into_patches_of_size(img, patch_shape)
 
         extents = []
         patch_paths = []
         for i, (block, extent) in zip(tqdm.trange(patch_count, desc='Creating patches...'), patches):
             out_path = os.path.join(tmp_dir_path, basename + '_' + str(i).zfill(6) + '.png')
-            api.image_utils.save_im_to_file(out_path, block)
+            skimage.io.imsave(out_path, block)
             patch_paths.append(out_path)
             extents.append(extent)
         results_arr = f(patch_paths, patch_shape, *args, **kwargs)
@@ -140,8 +146,34 @@ def apply_in_patches_with_one_to_one_results(f, paths, patch_shape, tmp_dir_path
         result_img = np.zeros(img.shape[0:2]).astype(results_arr.dtype)
         for row, (xmin, ymin, xmax, ymax) in zip(results_arr, extents):
             result_img[xmin: xmax, ymin: ymax] = row
-        result_img_viewable, _ = api.image_utils.scale_image_auto(result_img, 0, 255, True, 'uint8')
-        out_path = basepath + '_' + f.__name__ + '.png'
-        api.image_utils.save_im_to_file(out_path, result_img_viewable)
+        result_img_viewable, _ = scale_image_auto(result_img, 0, 255, True, 'uint8')
+        out_path = os.path.join(result_dir, basename + '_' + f.__name__ + '.png')
+        skimage.io.imsave(out_path, result_img_viewable)
         out_paths.append(out_path)
     return out_paths
+
+
+def main(images_dir, patch_shape=(256, 256), patches_dir=None):
+    image_paths = [path for path in glob.iglob(os.path.join(images_dir, '*'))
+                   if not os.path.isdir(path) and file_is_image(path)]
+    if not patches_dir:
+        patches_dir = os.path.join(images_dir, 'patches')
+        os.makedirs(patches_dir, exist_ok=True)
+    result_dir = os.path.join(images_dir, 'results')
+    apply_in_patches_with_one_to_one_results(vegetation_segmentation_wrapper, image_paths, patch_shape, patches_dir,
+                                             result_dir)
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("images_dir", help="path to images dir.")
+    ap.add_argument("--patch_shape", help="optional string representing a python tuple of (img_height, img_width). "
+                                          "e.g. '(256, 256)'.", default="(256, 256)")
+    ap.add_argument("--patches_dir", help="optional path to dir to which to store patches. "
+                                          "Otherwise will be mapped to $images_dir/patches/.")
+
+    parsed_args = ap.parse_args()
+
+    mpatch_shape = tuple(int(x) for x in eval(parsed_args.patch_shape))
+
+    main(parsed_args.images_dir, mpatch_shape, parsed_args.patches_dir)
