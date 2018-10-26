@@ -2,3 +2,5 @@
 /data
 /DPP-Processed
 *.pyc
+
+venv/

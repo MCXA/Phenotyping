@@ -121,7 +121,7 @@ def vegetation_segmentation_wrapper(paths, patch_shape, batch_size=8):
                                                        img_width=patch_shape[1])
 
 
-def apply_in_patches_with_one_to_one_results(f, paths, patch_shape, tmp_dir_path, result_dir,  *args, **kwargs):
+def apply_in_patches_with_one_to_one_results(f, paths, patch_shape, patches_dir, result_dir, *args, **kwargs):
     out_paths = []
     for path in tqdm.tqdm(paths):
         basepath, ext = os.path.splitext(path)
@@ -134,7 +134,7 @@ def apply_in_patches_with_one_to_one_results(f, paths, patch_shape, tmp_dir_path
         extents = []
         patch_paths = []
         for i, (block, extent) in zip(tqdm.trange(patch_count, desc='Creating patches...'), patches):
-            out_path = os.path.join(tmp_dir_path, basename + '_' + str(i).zfill(6) + '.png')
+            out_path = os.path.join(patches_dir, basename + '_' + str(i).zfill(6) + '.png')
             skimage.io.imsave(out_path, block)
             patch_paths.append(out_path)
             extents.append(extent)
@@ -153,15 +153,15 @@ def apply_in_patches_with_one_to_one_results(f, paths, patch_shape, tmp_dir_path
     return out_paths
 
 
-def main(images_dir, patch_shape=(256, 256), patches_dir=None):
+def main(images_dir, patch_shape=(256, 256)):
     image_paths = [path for path in glob.iglob(os.path.join(images_dir, '*'))
                    if not os.path.isdir(path) and file_is_image(path)]
-    if not patches_dir:
-        patches_dir = os.path.join(images_dir, 'patches')
-        os.makedirs(patches_dir, exist_ok=True)
+    patches_dir = os.path.join(images_dir, 'patches')
+    os.makedirs(patches_dir, exist_ok=True)
     result_dir = os.path.join(images_dir, 'results')
-    apply_in_patches_with_one_to_one_results(vegetation_segmentation_wrapper, image_paths, patch_shape, patches_dir,
-                                             result_dir)
+    os.makedirs(result_dir, exist_ok=True)
+    return apply_in_patches_with_one_to_one_results(vegetation_segmentation_wrapper, image_paths, patch_shape,
+                                                    patches_dir, result_dir)
 
 
 if __name__ == "__main__":
