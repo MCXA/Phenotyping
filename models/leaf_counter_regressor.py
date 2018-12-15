@@ -22,7 +22,7 @@ model.set_learning_rate(0.0001)
 model.set_weight_initializer('xavier')
 model.set_maximum_training_epochs(500)
 
-# Augmentation options
+# Augmentation options (Опции увеличения)
 model.set_augmentation_brightness_and_contrast(True)
 model.set_augmentation_flip_horizontal(True)
 model.set_augmentation_flip_vertical(True)
