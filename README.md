@@ -1,4 +1,4 @@
-### The [DPP paper](http://journal.frontiersin.org/article/10.3389/fpls.2017.01190/full) is now available online!
+<!-- ### The [DPP paper](http://journal.frontiersin.org/article/10.3389/fpls.2017.01190/full) is now available online!
 
 # Deep Plant Phenomics
 
